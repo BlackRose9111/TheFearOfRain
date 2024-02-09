@@ -1,1 +1,11 @@
-{}
+{
+  "time" : {
+    "before_text" : "Current Time",
+    "after_text" : "",
+    "footer" : "!time",
+    "title" : "Rain",
+    "color" : 16384255
+  },
+  "weather": ":cloud: Cloudy :cloud:"
+
+}
