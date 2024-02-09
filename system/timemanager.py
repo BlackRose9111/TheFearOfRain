@@ -5,16 +5,20 @@ import pytz
 import main
 
 
-class Timemanager():
+class Timemanager:
     def __init__(self):
         self.timezone = pytz.timezone(main.bot_time_zone)
 
     def get_time(self):
         return datetime.now(self.timezone)
-    def format_time(self,time):
+
+    @staticmethod
+    def format_time(time):
         #only hours and minutes
         return time.strftime("%H:%M")
-    def format_seconds(self,seconds):
+
+    @staticmethod
+    def format_seconds(seconds):
         time = seconds
         timesuffix = "S"
         if seconds >= 60:
@@ -30,11 +34,17 @@ class Timemanager():
                         time = time / 365
                         timesuffix = "Y"
         return str(round(time,2)) + timesuffix
-    def get_time_difference(self,first,second):
+
+    @staticmethod
+    def get_time_difference(first,second):
         return (first - second).total_seconds()
+
+    @staticmethod
     def get_bot_uptime(self):
         botrunseconds = main.run_time
-        return self.format_seconds(botrunseconds)
+        return Timemanager.format_seconds(botrunseconds)
+
+    @staticmethod
     def get_but_uptime_raw(self):
         return main.run_time
 

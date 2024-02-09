@@ -1,8 +1,9 @@
 import nextcord
 from nextcord.ext import commands,tasks
-
 from system.filemanager import filemanager
+from data import databasecontext
 import os
+import mysql.connector
 
 owner_ids = [240027656949596160, 1068287199688278166]
 bot_name = "Luna"
@@ -16,18 +17,28 @@ bot = commands.AutoShardedBot(command_prefix="!",
 
 run_time = 0
 TOKEN = ""
-
-
+DATABASECONTEXT : databasecontext = None
 
 @bot.event
 async def on_ready():
-    print("Luna launched")
+    print("Director launched")
     parallel_loop.start()
     database_connect()
 
 
 def database_connect():
-    pass
+    dbinfo = filemanager.get_json(alias="database",debug=False)
+    try:
+        connection = mysql.connector.connect(host=dbinfo["host"],
+                                             user=dbinfo["user"],
+                                             password=dbinfo["password"],
+                                             database=dbinfo["database"])
+        global DATABASECONTEXT
+        DATABASECONTEXT = databasecontext.DatabaseContext(connection=connection)
+    except Exception as e:
+        print(f"Failed to connect to database with error {e}")
+        DATABASECONTEXT = None
+
 
 
 def database_keepalive():
@@ -39,6 +50,7 @@ async def parallel_loop():
     global run_time
     run_time += 1
     database_keepalive()
+
 
 def get_token():
     global TOKEN
@@ -58,11 +70,13 @@ def get_token():
                 filemanager.change_or_add_value_on_json(new_value=TOKEN,alias="token",debug=True,key="token")
                 break
 
+
 def load_module(modulename):
     try:
         bot.load_extension(modulename)
     except Exception as e:
         print(f"Failed to load module {modulename} with error {e}")
+
 
 def load_all_modules():
     for file in os.listdir("modules"):
@@ -71,13 +85,10 @@ def load_all_modules():
             load_module(f"modules.{file[:-3]}")
             print(f"Loaded module {file[:-3]}")
 
+
 get_token()
 load_all_modules()
 bot.run(TOKEN)
-
-
-
-
 print("Goodbye! <3")
 
 

@@ -1,3 +1,5 @@
-nextcord~=2.5.0
-Flask~=2.3.2
+nextcord
+Flask
 pytz
+mysql.connector.python
+
