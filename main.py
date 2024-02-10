@@ -89,9 +89,9 @@ class filemanager():
 
 
 owner_ids = [240027656949596160, 1068287199688278166]
-bot_name = "Luna"
+bot_name = "Vivian"
 bot_time_zone = "Europe/Istanbul"
-bot = commands.AutoShardedBot(command_prefix="!",
+bot = commands.AutoShardedBot(command_prefix="?",
                               strip_after_prefix=True,
                               case_insensitive=True,
                               intents=nextcord.Intents.all(),
@@ -105,7 +105,7 @@ DatabaseCursor : MySQLCursorAbstract = None
 
 @bot.event
 async def on_ready():
-    print("Director launched")
+    print(f"{bot_name} launched")
     parallel_loop.start()
     database_connect()
 
