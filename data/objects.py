@@ -1,206 +1,148 @@
 #objects can be json or database related. Json objects should be managed by the filemanager class in system
 import main
 
+class ItemAlreadyExists(Exception):
+    def __init__(self):
+        super().__init__("Item already exists")
+
+class ItemDoesNotExist(Exception):
+    def __init__(self):
+        super().__init__("Item does not exist")
+
+
 
 class DatabaseModel:
-    id : int
-    table_name : str
+
+    id : int = None
+    table_name : str = None
     def __init__(self):
         pass
 
-    def save(self):
-        pass
-
-    def delete(self):
+    # C R U D
+    def create(self):
         pass
 
     def update(self):
         pass
 
-    def less_verbose_string(self):
-        pass
-
-    @staticmethod
-    def get(id : int):
-        pass
-
-    @staticmethod
-    def get_all():
-        pass
-
-    @staticmethod
-    def get_all_where(**kwargs):
-        pass
-
-    @staticmethod
-    def get_where(**kwargs):
-        pass
-
-
-
-class User(DatabaseModel):
-
-    discord_id : str
-
-    def __init__(self,**kwargs):
-        super().__init__()
-        self.table_name = "User"
-        #set attributes automatically
-        for key in kwargs.keys():
-            setattr(self,key,kwargs[key])
-
-    def save(self):
-        fields = [field for field in self.__dict__.keys() if field != "table_name" and field != "id"]
-        values = [getattr(self,field) for field in fields]
-        query = f"INSERT INTO {self.table_name} ({','.join(fields)}) VALUES ({','.join(['%s' for _ in fields])})"
-        main.DATABASECONTEXT.query(query,values)
-        self.id = main.DATABASECONTEXT.cursor.lastrowid
-
     def delete(self):
-        query = f"DELETE FROM {self.table_name} WHERE id = %s"
-        main.DATABASECONTEXT.query(query,(self.id,))
+        pass
 
-    def update(self):
-        fields = [field for field in self.__dict__.keys() if field != "table_name" and field != "id"]
-        values = [getattr(self,field) for field in fields]
-        query = f"UPDATE {self.table_name} SET {','.join([f'{field} = %s' for field in fields])} WHERE id = %s"
-        main.DATABASECONTEXT.query(query,values + [self.id])
+    @staticmethod
+    def find(*,id : int = None, **kwargs):
+        pass
+
+    @staticmethod
+    def find_all(**kwargs):
+        pass
+
+    @staticmethod
+    def find_or_create(**kwargs):
+        pass
 
     def less_verbose_string(self):
-        return ""
+        return str(self.id)
 
-
-    @staticmethod
-    def get(id : int):
-        query = f"SELECT * FROM User WHERE id = %s"
-        result  = main.DATABASECONTEXT.query_with_single_result(query,(id,))
-        if result is None:
-            return None
-        return User(**result.result)
-
-    @staticmethod
-    def get_all():
-        query = f"SELECT * FROM User"
-        result = main.DATABASECONTEXT.query_with_multiple_results(query,())
-        if len(result) == 0:
-            return []
-        return [User(**row) for row in result.result]
-
-    @staticmethod
-    def get_all_where(**kwargs):
-        query = f"SELECT * FROM User WHERE {' AND '.join([f'{key} = %s' for key in kwargs.keys()])}"
-        result = main.DATABASECONTEXT.query_with_multiple_results(query,tuple(kwargs.values()))
-        if len(result) == 0:
-            return []
-        return [User(**row) for row in result.result]
-
-    @staticmethod
-    def get_where(**kwargs):
-        query = f"SELECT * FROM User WHERE {' AND '.join([f'{key} = %s' for key in kwargs.keys()])}"
-        result = main.DATABASECONTEXT.query_with_single_result(query,tuple(kwargs.values()))
-        if result.result is None:
-            return None
-        return User(**result.result)
-
-    @staticmethod
-    def find_or_create(discord_id : str):
-        user = User.get_where(discord_id=discord_id)
-        if user is None:
-            user = User(discord_id=discord_id)
-            user.save()
-        return user
+    def __str__(self):
+        return str(self.__dict__)
 
 
 class RpCharacter(DatabaseModel):
-    user_id : int
-    name : str
-    arcane : int = 100
+    name : str = None
     age : int = 18
-    bio : str
-    image : str = None #url
+    bio : str = None
+    arcane : int = 100
+    discord_id : str = None
     approved : bool = False
-    def __init__(self,**kwargs):
+    image : str = None
+    def __init__(self, **kwargs):
         super().__init__()
-        self.table_name = "RpCharacter"
-        #set attributes automatically
         for key in kwargs.keys():
             setattr(self,key,kwargs[key])
 
-    def get_user(self):
-        return User.get(self.user_id)
-
     def less_verbose_string(self):
-        return f"""{self.name} By <@{self.get_user().discord_id}>"""
+        return f"{self.name}"
 
-    def save(self):
-        context = main.DATABASECONTEXT
-        fields = [field for field in self.__dict__.keys() if field != "table_name" and field != "id"]
-        values = [getattr(self,field) for field in fields]
-        query = f"INSERT INTO {self.table_name} ({','.join(fields)}) VALUES ({','.join(['%s' for _ in fields])})"
-        context.query(query,values)
-        self.id = context.cursor.lastrowid
+    def __str__(self):
+        icons = (":x:",":white_check_mark:")
+        return f"{self.name} - {icons[int(self.approved)]}"
+    def create(self):
+        if self.id is not None:
+            raise ItemAlreadyExists
+        else:
+            query_string = "INSERT INTO RpCharacter (name,age,bio,arcane,discord_id,approved,image) VALUES (%s,%s,%s,%s,%s,%s,%s)"
+            main.DatabaseCursor.execute(query_string,(self.name,self.age,self.bio,self.arcane,self.discord_id,self.approved,self.image))
+            main.DatabaseConnection.commit()
+            self.id = main.DatabaseCursor.lastrowid
 
-    def delete(self):
-        context = main.DATABASECONTEXT
-        query = f"DELETE FROM {self.table_name} WHERE id = %s"
-        context.query(query,(self.id,))
+
 
     def update(self):
-        context = main.DATABASECONTEXT
-        fields = [field for field in self.__dict__.keys() if field != "table_name" and field != "id"]
-        values = [getattr(self,field) for field in fields]
-        query = f"UPDATE {self.table_name} SET {','.join([f'{field} = %s' for field in fields])} WHERE id = %s"
-        context.query(query,values + [self.id])
+        if self.id is None:
+            raise ItemDoesNotExist
+        else:
+            query_string = "UPDATE RpCharacter SET "
+            params = []
+            for key in self.__dict__.keys():
+                if key != "id":
+                    query_string += f"{key} = %s,"
+                    params.append(self.__dict__[key])
+            query_string = query_string[:-1]
+            query_string += " WHERE id = %s"
+            params.append(self.id)
+            main.DatabaseCursor.execute(query_string,params)
+            main.DatabaseConnection.commit()
 
-    def less_verbose_string(self):
-        return f"{self.name} - {self.get_user().discord_id}"
+    def delete(self):
+        if self.id is None:
+            raise ItemDoesNotExist
+        else:
+            main.DatabaseCursor.execute("DELETE FROM RpCharacter WHERE id = %s",(self.id,))
+            main.DatabaseConnection.commit()
+            self.id = None
 
     @staticmethod
-    def get(id : int):
-        context = main.DATABASECONTEXT
-        query = f"SELECT * FROM RpCharacter WHERE id = %s"
-        result = context.query_with_single_result(query,(id,))
+    def find(*,id : int = None, **kwargs):
+        query_string = "SELECT * FROM RpCharacter WHERE "
+        params = []
+        if id is not None:
+            query_string += "id = %s"
+            params.append(id)
+        else:
+            for key in kwargs.keys():
+                query_string += f"{key} = %s AND "
+                params.append(kwargs[key])
+            query_string = query_string[:-5]
+        main.DatabaseCursor.execute(query_string,params)
+        #cursor returns a dictionary
+        result = main.DatabaseCursor.fetchone()
         if result is None:
             return None
-        return RpCharacter(**result.result)
+        else:
+            return RpCharacter(**result)
 
     @staticmethod
-    def get_all():
-        context = main.DATABASECONTEXT
-        query = f"SELECT * FROM RpCharacter"
-        result = context.query_with_multiple_results(query,())
-        if len(result) == 0:
-            return []
-        return [RpCharacter(**row) for row in result.result]
-
-    @staticmethod
-    def get_all_where(**kwargs):
-        context = main.DATABASECONTEXT
-        query = f"SELECT * FROM RpCharacter WHERE {' AND '.join([f'{key} = %s' for key in kwargs.keys()])}"
-        result = context.query_with_multiple_results(query,tuple(kwargs.values()))
-        if len(result) == 0:
-            return []
-        return [RpCharacter(**row) for row in result.result]
-
-    @staticmethod
-    def get_where(**kwargs):
-        context = main.DATABASECONTEXT
-        query = f"SELECT * FROM RpCharacter WHERE {' AND '.join([f'{key} = %s' for key in kwargs.keys()])}"
-        result  = context.query_with_single_result(query,tuple(kwargs.values()))
+    def find_all(**kwargs):
+        query_string = "SELECT * FROM RpCharacter WHERE "
+        params = []
+        for key in kwargs.keys():
+            query_string += f"{key} = %s AND "
+            params.append(kwargs[key])
+        query_string = query_string[:-5]
+        main.DatabaseCursor.execute(query_string,params)
+        result = main.DatabaseCursor.fetchall()
         if result is None:
             return None
-        return RpCharacter(**result.result)
+        else:
+            return [RpCharacter(**item) for item in result]
 
     @staticmethod
-    def find_or_create(User_id : int,name : str):
-        character = RpCharacter.get_where(User_id=User_id,name=name)
-        if character is None:
-            character = RpCharacter(User_id=User_id,name=name)
-            character.save()
-        return character
+    def find_name_like(name):
+        query_string = "SELECT * FROM RpCharacter WHERE name LIKE %s"
+        main.DatabaseCursor.execute(query_string,("%"+name+"%",))
+        result = main.DatabaseCursor.fetchall()
+        if result is None:
+            return None
+        else:
+            return [RpCharacter(**item) for item in result]
 
-    @staticmethod
-    def get_all_for_user(User_id : int):
-        return RpCharacter.get_all_where(User_id=User_id)
-
-    

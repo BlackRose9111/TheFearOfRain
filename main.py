@@ -1,4 +1,5 @@
 import nextcord
+from mysql.connector.abstracts import MySQLConnectionAbstract, MySQLCursorAbstract
 from nextcord.ext import commands,tasks
 
 import os
@@ -6,42 +7,7 @@ import mysql.connector
 import json
 import mysql.connector
 
-class DatabaseQueryResult:
-    def __init__(self,result,id : int):
-        self.result = result
-        self.id = id
 
-    def __getitem__(self, item):
-        return self.result[item]
-
-    def __len__(self):
-        return len(self.result)
-
-
-class DatabaseContext:
-    def __init__(self,connection):
-        self.connection : mysql.connector.MySQLConnection = connection
-        self.cursor = self.connection.cursor(buffered=True,dictionary=True)
-
-    def keepalive(self):
-        self.connection.ping(reconnect=True)
-
-    def close(self):
-        self.connection.close()
-
-    def query(self,query_string : str,params : tuple):
-        self.cursor.execute(operation= query_string,params=params)
-        self.connection.commit()
-
-    def query_with_single_result(self,query_string : str,params : tuple):
-        self.cursor.execute(operation= query_string,params=params)
-        self.connection.commit()
-        return DatabaseQueryResult(result=self.cursor.fetchone(),id=self.cursor.lastrowid)
-
-    def query_with_multiple_results(self,query_string : str,params : tuple):
-        self.cursor.execute(operation= query_string,params=params)
-        self.connection.commit()
-        return DatabaseQueryResult(result=self.cursor.fetchall(),id=self.cursor.lastrowid)
 
 
 class filemanager():
@@ -134,7 +100,8 @@ bot = commands.AutoShardedBot(command_prefix="!",
 
 run_time = 0
 TOKEN = ""
-DATABASECONTEXT : DatabaseContext = None
+DatabaseConnection :  MySQLConnectionAbstract = None
+DatabaseCursor : MySQLCursorAbstract = None
 
 @bot.event
 async def on_ready():
@@ -150,8 +117,11 @@ def database_connect():
                                              user=dbinfo["user"],
                                              password=dbinfo["password"],
                                              database=dbinfo["database"])
-        global DATABASECONTEXT
-        DATABASECONTEXT = DatabaseContext(connection=connection)
+        connection.autocommit = True
+        global DatabaseConnection
+        DatabaseConnection = connection
+        global DatabaseCursor
+        DatabaseCursor = connection.cursor(dictionary=True,buffered=True)
     except Exception as e:
         print(f"Failed to connect to database with error {e}")
         DATABASECONTEXT = None
@@ -160,7 +130,7 @@ def database_connect():
 
 def database_keepalive():
     try:
-        DATABASECONTEXT.keepalive()
+        DatabaseConnection.ping(reconnect=True,attempts=3, delay=5)
     except:
         pass
 
