@@ -1,17 +1,39 @@
+from main import filemanager
+from data.objects import User, RpCharacter, DatabaseModel
 from datetime import datetime
 import pytz
-from nextcord import Embed
-from system.filemanager import filemanager
+from nextcord import Embed, Member
 from nextcord.ext import commands
-from nextcord.ext.commands import Cog
+from nextcord.ext.commands import Cog, Bot, Context
+
+
+async def multiplechoices(client : Bot,ctx : Context, list_of_models : list[DatabaseModel]):
+    t = f"""Multiple choices found. Please select one of the following by typing the number of the choice:
+    """
+    increment = 1
+    for model in list_of_models:
+        t += f"{increment}. {model.less_verbose_string()}\n"
+        increment+=1
+    vembed = Embed(description=t, colour=0xfa00ff)
+    message = await ctx.send(embed=vembed)
+    def check(m):
+        return m.author == ctx.author and m.channel == ctx.channel
+    try:
+        msg = await client.wait_for('message', check=check, timeout=30)
+        msg = int(msg.content)
+        if msg > len(list_of_models):
+            raise Exception("Cancelled")
+        return list_of_models[msg - 1]
+    except:
+        await ctx.send("Invalid choice")
+        return None
 
 def generate_clock_embed():
     time_zone = pytz.timezone("Etc/GMT+9")
-    formatted_time = time_zone.localize(datetime.now()).strftime("%H:%M")
-    clock_details = filemanager.get_json(alias="config")["time"]
+    formatted_time = datetime.now(time_zone).strftime("%H:%M")
+    clock_details = filemanager.get_json(alias="config",debug=False)["time"]
     desc = f"""{clock_details["before_text"]} `{formatted_time}`\n{clock_details["after_text"]}
-    
-    Weather: {filemanager.get_json(alias="config")["weather"]}
+    **Weather:** {filemanager.get_json(alias="config",debug=False)["weather"]}
     """
     embed = Embed(title=clock_details["title"],description=desc,colour=clock_details["color"])
     embed.set_footer(text=clock_details["footer"])
@@ -64,7 +86,21 @@ class Roleplay(Cog):
     @set_weather.error
     async def set_weather_error(self,ctx,error):
         await ctx.send(error)
-        
+
+    @commands.command()
+    async def characters(self,ctx,member : Member = None):
+        if member is None:
+            member = ctx.author
+        user = User.find_or_create(discord_id=str(member.id))
+        characters = RpCharacter.get_all_for_user(User_id=user.id)
+        t = f"""{member.mention} has the following characters:\n"""
+        for character in characters:
+            t += f"{character.name}\n"
+        vembed = Embed(title="Characters",description=t,colour=0x00ff00)
+        await ctx.send(embed=vembed)
+
+
+
 
 def setup(bot):
     bot.add_cog(Roleplay(bot))

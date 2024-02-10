@@ -1,6 +1,7 @@
 #objects can be json or database related. Json objects should be managed by the filemanager class in system
-from main import DATABASECONTEXT as context
-from data.databasecontext import DatabaseContext, DatabaseQueryResult
+import main
+
+
 class DatabaseModel:
     id : int
     table_name : str
@@ -52,18 +53,18 @@ class User(DatabaseModel):
         fields = [field for field in self.__dict__.keys() if field != "table_name" and field != "id"]
         values = [getattr(self,field) for field in fields]
         query = f"INSERT INTO {self.table_name} ({','.join(fields)}) VALUES ({','.join(['%s' for _ in fields])})"
-        context.query(query,values)
-        self.id = context.cursor.lastrowid
+        main.DATABASECONTEXT.query(query,values)
+        self.id = main.DATABASECONTEXT.cursor.lastrowid
 
     def delete(self):
         query = f"DELETE FROM {self.table_name} WHERE id = %s"
-        context.query(query,(self.id,))
+        main.DATABASECONTEXT.query(query,(self.id,))
 
     def update(self):
         fields = [field for field in self.__dict__.keys() if field != "table_name" and field != "id"]
         values = [getattr(self,field) for field in fields]
         query = f"UPDATE {self.table_name} SET {','.join([f'{field} = %s' for field in fields])} WHERE id = %s"
-        context.query(query,values + [self.id])
+        main.DATABASECONTEXT.query(query,values + [self.id])
 
     def less_verbose_string(self):
         return ""
@@ -72,7 +73,7 @@ class User(DatabaseModel):
     @staticmethod
     def get(id : int):
         query = f"SELECT * FROM User WHERE id = %s"
-        result : DatabaseQueryResult = context.query_with_single_result(query,(id,))
+        result  = main.DATABASECONTEXT.query_with_single_result(query,(id,))
         if result is None:
             return None
         return User(**result.result)
@@ -80,7 +81,7 @@ class User(DatabaseModel):
     @staticmethod
     def get_all():
         query = f"SELECT * FROM User"
-        result : DatabaseQueryResult = context.query_with_multiple_results(query,())
+        result = main.DATABASECONTEXT.query_with_multiple_results(query,())
         if len(result) == 0:
             return []
         return [User(**row) for row in result.result]
@@ -88,7 +89,7 @@ class User(DatabaseModel):
     @staticmethod
     def get_all_where(**kwargs):
         query = f"SELECT * FROM User WHERE {' AND '.join([f'{key} = %s' for key in kwargs.keys()])}"
-        result : DatabaseQueryResult = context.query_with_multiple_results(query,tuple(kwargs.values()))
+        result = main.DATABASECONTEXT.query_with_multiple_results(query,tuple(kwargs.values()))
         if len(result) == 0:
             return []
         return [User(**row) for row in result.result]
@@ -96,8 +97,8 @@ class User(DatabaseModel):
     @staticmethod
     def get_where(**kwargs):
         query = f"SELECT * FROM User WHERE {' AND '.join([f'{key} = %s' for key in kwargs.keys()])}"
-        result : DatabaseQueryResult = context.query_with_single_result(query,tuple(kwargs.values()))
-        if result is None:
+        result = main.DATABASECONTEXT.query_with_single_result(query,tuple(kwargs.values()))
+        if result.result is None:
             return None
         return User(**result.result)
 
@@ -132,6 +133,7 @@ class RpCharacter(DatabaseModel):
         return f"""{self.name} By <@{self.get_user().discord_id}>"""
 
     def save(self):
+        context = main.DATABASECONTEXT
         fields = [field for field in self.__dict__.keys() if field != "table_name" and field != "id"]
         values = [getattr(self,field) for field in fields]
         query = f"INSERT INTO {self.table_name} ({','.join(fields)}) VALUES ({','.join(['%s' for _ in fields])})"
@@ -139,10 +141,12 @@ class RpCharacter(DatabaseModel):
         self.id = context.cursor.lastrowid
 
     def delete(self):
+        context = main.DATABASECONTEXT
         query = f"DELETE FROM {self.table_name} WHERE id = %s"
         context.query(query,(self.id,))
 
     def update(self):
+        context = main.DATABASECONTEXT
         fields = [field for field in self.__dict__.keys() if field != "table_name" and field != "id"]
         values = [getattr(self,field) for field in fields]
         query = f"UPDATE {self.table_name} SET {','.join([f'{field} = %s' for field in fields])} WHERE id = %s"
@@ -153,32 +157,36 @@ class RpCharacter(DatabaseModel):
 
     @staticmethod
     def get(id : int):
+        context = main.DATABASECONTEXT
         query = f"SELECT * FROM RpCharacter WHERE id = %s"
-        result : DatabaseQueryResult = context.query_with_single_result(query,(id,))
+        result = context.query_with_single_result(query,(id,))
         if result is None:
             return None
         return RpCharacter(**result.result)
 
     @staticmethod
     def get_all():
+        context = main.DATABASECONTEXT
         query = f"SELECT * FROM RpCharacter"
-        result : DatabaseQueryResult = context.query_with_multiple_results(query,())
+        result = context.query_with_multiple_results(query,())
         if len(result) == 0:
             return []
         return [RpCharacter(**row) for row in result.result]
 
     @staticmethod
     def get_all_where(**kwargs):
+        context = main.DATABASECONTEXT
         query = f"SELECT * FROM RpCharacter WHERE {' AND '.join([f'{key} = %s' for key in kwargs.keys()])}"
-        result : DatabaseQueryResult = context.query_with_multiple_results(query,tuple(kwargs.values()))
+        result = context.query_with_multiple_results(query,tuple(kwargs.values()))
         if len(result) == 0:
             return []
         return [RpCharacter(**row) for row in result.result]
 
     @staticmethod
     def get_where(**kwargs):
+        context = main.DATABASECONTEXT
         query = f"SELECT * FROM RpCharacter WHERE {' AND '.join([f'{key} = %s' for key in kwargs.keys()])}"
-        result : DatabaseQueryResult = context.query_with_single_result(query,tuple(kwargs.values()))
+        result  = context.query_with_single_result(query,tuple(kwargs.values()))
         if result is None:
             return None
         return RpCharacter(**result.result)

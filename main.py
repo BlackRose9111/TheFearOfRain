@@ -1,9 +1,126 @@
 import nextcord
 from nextcord.ext import commands,tasks
-from system.filemanager import filemanager
-from data import databasecontext
+
 import os
 import mysql.connector
+import json
+import mysql.connector
+
+class DatabaseQueryResult:
+    def __init__(self,result,id : int):
+        self.result = result
+        self.id = id
+
+    def __getitem__(self, item):
+        return self.result[item]
+
+    def __len__(self):
+        return len(self.result)
+
+
+class DatabaseContext:
+    def __init__(self,connection):
+        self.connection : mysql.connector.MySQLConnection = connection
+        self.cursor = self.connection.cursor(buffered=True,dictionary=True)
+
+    def keepalive(self):
+        self.connection.ping(reconnect=True)
+
+    def close(self):
+        self.connection.close()
+
+    def query(self,query_string : str,params : tuple):
+        self.cursor.execute(operation= query_string,params=params)
+        self.connection.commit()
+
+    def query_with_single_result(self,query_string : str,params : tuple):
+        self.cursor.execute(operation= query_string,params=params)
+        self.connection.commit()
+        return DatabaseQueryResult(result=self.cursor.fetchone(),id=self.cursor.lastrowid)
+
+    def query_with_multiple_results(self,query_string : str,params : tuple):
+        self.cursor.execute(operation= query_string,params=params)
+        self.connection.commit()
+        return DatabaseQueryResult(result=self.cursor.fetchall(),id=self.cursor.lastrowid)
+
+
+class filemanager():
+    aliases : dict = {"alias": "variables/config/aliases.json"}
+    def __init__(self):
+        self.get_aliases()
+
+    def get_aliases(self):
+        obj : dict = filemanager.get_json(address=self.aliases["alias"],debug=False)
+        for key in obj.keys():
+            self.aliases[key] = obj[key]
+    def get_alias(self,alias):
+        try:
+            return self.aliases[alias]
+        except:
+            return None
+
+
+    @staticmethod
+    def get_json(*, address : str = None,alias : str = None,debug = True) -> dict or None:
+        file_address = None
+
+        try:
+            if address is not None:
+                file_address = address
+            elif address is None and alias is not None:
+                fm = filemanager()
+                file_address = fm.get_alias(alias=alias)
+            elif address is None and alias is None:
+                raise Exception("Missing address and alias")
+            with open(file_address,"r") as f:
+                contents = f.read()
+                _object = dict(json.loads(contents))
+                if debug is True:
+                    print(f"Accessed {file_address}")
+                return _object
+
+        except:
+            return None
+    @staticmethod
+    def enter_json(*, dictionary : dict, address :str = None, alias : str = None, debug = True):
+        file_address = None
+        try:
+            if address is not None:
+                file_address = address
+            elif address is None and alias is not None:
+                fm = filemanager()
+                file_address = fm.get_alias(alias)
+            elif address is None and alias is None:
+                raise Exception("Missing address and alias")
+            with open(file_address,"w") as f:
+                json.dump(dictionary,f)
+            if debug is True:
+                print(f"Wrote {dictionary} on {file_address}")
+        except Exception as e:
+            print(f"An exception as occued {e}")
+
+    @staticmethod
+    def get_value_from_json(*, key : str, address : str = None,alias : str = None, debug = True,default = None) -> object or None:
+        obj = filemanager.get_json(address=address, alias=alias, debug=debug)
+        try:
+            return obj[key]
+        except:
+            return default
+
+    @staticmethod
+    def change_or_add_value_on_json(*, key : str, new_value, address : str = None, alias : str = None, debug =True):
+        obj = filemanager.get_json(address=address, alias=alias, debug=debug)
+        obj[key] = new_value
+        filemanager.enter_json(dictionary=obj,address=address,alias=alias,debug=debug)
+
+    @staticmethod
+    def delete_value_on_json(*, key : str, address : str  = None,alias : str = None, debug = True):
+        obj : dict = filemanager.get_json(address=address,alias=alias,debug=debug)
+        obj.pop(__key=key)
+        filemanager.enter_json(dictionary=obj,address=address,alias=alias,debug=debug)
+
+
+
 
 owner_ids = [240027656949596160, 1068287199688278166]
 bot_name = "Luna"
@@ -17,7 +134,7 @@ bot = commands.AutoShardedBot(command_prefix="!",
 
 run_time = 0
 TOKEN = ""
-DATABASECONTEXT : databasecontext = None
+DATABASECONTEXT : DatabaseContext = None
 
 @bot.event
 async def on_ready():
@@ -34,7 +151,7 @@ def database_connect():
                                              password=dbinfo["password"],
                                              database=dbinfo["database"])
         global DATABASECONTEXT
-        DATABASECONTEXT = databasecontext.DatabaseContext(connection=connection)
+        DATABASECONTEXT = DatabaseContext(connection=connection)
     except Exception as e:
         print(f"Failed to connect to database with error {e}")
         DATABASECONTEXT = None
@@ -42,7 +159,10 @@ def database_connect():
 
 
 def database_keepalive():
-    pass
+    try:
+        DATABASECONTEXT.keepalive()
+    except:
+        pass
 
 
 @tasks.loop(seconds=1)
