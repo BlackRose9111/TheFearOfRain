@@ -24,6 +24,6 @@ class CharacterSubmit(Modal):
         if result is None:
             await interaction.send("Something went wrong, please try again.")
         else:
-            await interaction.send(result)
+            await interaction.send(f"Character {result.name} submitted. An admin will review it soon. If you want changes done to this character, please let an admin know.")
         self.stop()
 
