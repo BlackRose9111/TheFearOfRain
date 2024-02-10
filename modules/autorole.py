@@ -17,7 +17,7 @@ class Autorole(Cog):
             role = member.guild.get_role(1205479230322778134)
             await member.add_roles(role)
 
-            embed = Embed(title="Welcome",description=f"Welcome to the server {member.mention}",colour=0x00ff00)
+            embed = Embed(title="Welcome",description=f"Welcome to the server {member.mention}\n Please submit a character and wait for approval before gaining access to the rest of the server.",colour=0x00ff00)
             channel = member.guild.get_channel(1205483966094647376)
             await channel.send(embed=embed)
             print(f"Gave {member} the role {role}")
