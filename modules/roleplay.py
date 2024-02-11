@@ -143,8 +143,11 @@ class Roleplay(Cog):
         characters = RpCharacter.find_name_like(name)
         if len(characters) > 1:
             character : RpCharacter = await multiplechoices(self.bot,ctx,characters)
-        else:
+        elif len(characters) == 1:
             character = characters[0]
+        else:
+            await ctx.send("Character not found")
+            return
         if character is not None:
             vembed = character_embed(character)
             if isinstance(ctx.author, Member):
