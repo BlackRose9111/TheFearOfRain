@@ -140,11 +140,11 @@ class Roleplay(Cog):
 
     @commands.command()
     async def characterinfo(self,ctx,*,name):
-        character = RpCharacter.find_name_like(name)
-        if len(character) > 1:
-            character : RpCharacter = await multiplechoices(self.bot,ctx,character)
+        characters = RpCharacter.find_name_like(name)
+        if len(characters) > 1:
+            character : RpCharacter = await multiplechoices(self.bot,ctx,characters)
         else:
-            character = character[0]
+            character = characters[0]
         if character is not None:
             vembed = character_embed(character)
             if isinstance(ctx.author, Member):
