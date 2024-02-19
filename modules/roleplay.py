@@ -247,6 +247,41 @@ class Roleplay(Cog):
         await ctx.send(error)
 
 
+    @commands.command(brief="Characters Approved",description="List all characters that are approved")
+    @commands.has_permissions(administrator=True,manage_guild=True)
+    async def charactersapproved(self,ctx):
+        characters = RpCharacter.find_all(approved=True)
+        t = "The following characters are approved:\n"
+        for character in characters:
+            t += f"{character.name} by <@{character.discord_id}>\n"
+        vembed = Embed(title="Characters Approved",description=t,colour=0x00ff00)
+        await ctx.send(embed=vembed)
+
+    @charactersapproved.error
+    async def charactersapproved_error(self,ctx,error):
+        await ctx.send(error)
+
+
+    @commands.command(brief="Set Time DO NOT USE THIS COMMAND YET",description="Set the time of the server")
+    @commands.has_permissions(administrator=True,manage_guild=True)
+    async def settime(self,ctx,field,*,value):
+        match(field.lower()):
+            case "before_text":
+                filemanager.change_or_add_value_on_json(key="before_text",alias="config",new_value=value,debug=False)
+            case "after_text":
+                filemanager.change_or_add_value_on_json(key="after_text",alias="config",new_value=value,debug=False)
+            case "title":
+                filemanager.change_or_add_value_on_json(key="title",alias="config",new_value=value,debug=False)
+            case "footer":
+                filemanager.change_or_add_value_on_json(key="footer",alias="config",new_value=value,debug=False)
+            case _:
+                await ctx.send("Invalid field")
+                return
+        await ctx.send(f"Field {field} updated to {value}")
+
+    @settime.error
+    async def settime_error(self,ctx,error):
+        await ctx.send(error)
 
 
 
