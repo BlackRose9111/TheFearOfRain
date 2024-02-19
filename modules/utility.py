@@ -1,3 +1,4 @@
+from nextcord import Member
 from nextcord.ext import commands
 from nextcord.ext.commands import Cog
 
@@ -31,5 +32,15 @@ class Utility(Cog):
     async def echo_error(self,ctx,error):
         await ctx.send(f"Error: {error}")
 
+    #kick command
+    @commands.command()
+    @commands.has_permissions(kick_members=True)
+    async def kick(self,ctx,member : Member,*,reason="No reason provided"):
+        await member.kick(reason=reason)
+        await ctx.send(f"{member.display_name} has been kicked from the server")
+
+    @kick.error
+    async def kick_error(self,ctx,error):
+        await ctx.send(f"Error: {error}")
 def setup(bot):
     bot.add_cog(Utility(bot))
