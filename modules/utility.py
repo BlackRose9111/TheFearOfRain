@@ -1,4 +1,4 @@
-from nextcord import Member
+from nextcord import Member, User
 from nextcord.ext import commands
 from nextcord.ext.commands import Cog
 
@@ -42,5 +42,19 @@ class Utility(Cog):
     @kick.error
     async def kick_error(self,ctx,error):
         await ctx.send(f"Error: {error}")
+
+    #ban command
+    @commands.command()
+    @commands.has_permissions(ban_members=True)
+    async def ban(self,ctx,user : User,*,reason="No reason provided"):
+        await ctx.guild.ban(user,reason=reason)
+        await ctx.send(f"{user.display_name} has been banned from the server")
+
+    @ban.error
+    async def ban_error(self,ctx,error):
+        await ctx.send(f"Error: {error}")
+
+    #ban by user id if the user is not in the server
+
 def setup(bot):
     bot.add_cog(Utility(bot))
